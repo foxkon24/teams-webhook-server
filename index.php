@@ -30,7 +30,7 @@ if (file_exists($configPath)) {
 file_put_contents(__DIR__ . '/teams_webhook.log', "[".date('Y-m-d H:i:s')."] [debug] \$config=" . print_r($config, true) . "\n", FILE_APPEND);
 
 // シークレット値（base64文字列）
-$secret_b64 = isset($config['TEAMS_OUTGOING_TOKEN']) ? $config['TEAMS_OUTGOING_TOKEN'] : '';
+$secret_b64 = isset($config['TEAMS_OUTGOING_TOKEN_ECHO']) ? $config['TEAMS_OUTGOING_TOKEN_ECHO'] : '';
 $secret = base64_decode($secret_b64);
 
 try {

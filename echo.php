@@ -19,8 +19,8 @@ if (empty($requestBody)) {
 $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
 
 // 署名を検証
-if (!verifyTeamsSignature($requestBody, $authHeader)) {
-    logMessage('署名検証に失敗しました', 'error');
+if (!verifyTeamsSignature($requestBody, $authHeader, 'TEAMS_OUTGOING_TOKEN_ECHO')) {
+    logMessage('署名検証に失敗しました (echo)', 'error');
     sendUnauthorizedResponse('Invalid signature');
 }
 

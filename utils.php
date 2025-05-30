@@ -74,9 +74,10 @@ function logMessage($message, $level = 'info') {
  * 
  * @param string $messageContent リクエストボディ（生のJSON）
  * @param string $authHeader Authorization ヘッダー
+ * @param string $tokenKey トークンキー
  * @return bool 署名が有効な場合はtrue
  */
-function verifyTeamsSignature($messageContent, $authHeader) {
+function verifyTeamsSignature($messageContent, $authHeader, $tokenKey = 'TEAMS_OUTGOING_TOKEN') {
     // デバッグモードで検証をスキップ
     if (getConfig('SKIP_VERIFICATION') == 1) {
         logMessage('署名検証をスキップしました（デバッグモード）', 'debug');
@@ -84,9 +85,9 @@ function verifyTeamsSignature($messageContent, $authHeader) {
     }
     
     // トークンが設定されていない場合
-    $teamsToken = getConfig('TEAMS_OUTGOING_TOKEN');
+    $teamsToken = getConfig($tokenKey);
     if (empty($teamsToken)) {
-        logMessage('TEAMS_OUTGOING_TOKENが設定されていません', 'error');
+        logMessage($tokenKey . 'が設定されていません', 'error');
         return false;
     }
     
@@ -99,16 +100,29 @@ function verifyTeamsSignature($messageContent, $authHeader) {
     // Bearer形式のトークンを抽出
     if (preg_match('/^Bearer (.+)$/', $authHeader, $matches)) {
         $providedToken = $matches[1];
-        
-        // HMAC-SHA256を使用してメッセージ署名を計算
-        $calculatedToken = base64_encode(hash_hmac('sha256', $messageContent, $teamsToken, true));
-        
-        // 署名を比較
+        $teamsTokenBin = base64_decode($teamsToken);
+        $calculatedToken = base64_encode(hash_hmac('sha256', $messageContent, $teamsTokenBin, true));
         if (hash_equals($calculatedToken, $providedToken)) {
-            logMessage('署名検証に成功しました', 'debug');
+            logMessage('署名検証に成功しました (Bearer)', 'debug');
             return true;
         } else {
-            logMessage('署名検証に失敗しました', 'error');
+            logMessage('署名検証に失敗しました (Bearer)', 'error');
+            return false;
+        }
+    }
+    
+    // HMAC形式のトークンを抽出（Teams Outgoing Webhook 標準）
+    if (preg_match('/^HMAC (.+)$/', $authHeader, $matches)) {
+        $providedToken = $matches[1];
+        $teamsTokenBin = base64_decode($teamsToken);
+        $calculatedToken = base64_encode(hash_hmac('sha256', $messageContent, $teamsTokenBin, true));
+        // デバッグ用: 受信ボディ・計算値・受信値をログ出力
+        logMessage('HMAC検証デバッグ: body=' . base64_encode($messageContent) . ' calculated=' . $calculatedToken . ' provided=' . $providedToken, 'debug');
+        if (hash_equals($calculatedToken, $providedToken)) {
+            logMessage('署名検証に成功しました (HMAC)', 'debug');
+            return true;
+        } else {
+            logMessage('署名検証に失敗しました (HMAC)', 'error');
             return false;
         }
     }

@@ -18,6 +18,9 @@ if (empty($requestBody)) {
 // Authorizationヘッダーを取得
 $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
 
+// 追加: 全HTTPヘッダーをログ出力
+logMessage('受信HTTPヘッダー: ' . json_encode(getallheaders()), 'debug');
+
 // 署名を検証
 if (!verifyTeamsSignature($requestBody, $authHeader)) {
     logMessage('署名検証に失敗しました', 'error');
@@ -42,6 +45,6 @@ if (!$result['success']) {
 
 // 成功レスポンス
 sendJsonResponse([
-    'status' => 'success',
-    'message' => 'Webhook forwarded successfully'
+    'type' => 'message',
+    'text' => 'Webhook受信・転送に成功しました'
 ]);
